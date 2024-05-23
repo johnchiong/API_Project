@@ -16,7 +16,7 @@ def hello_world():
     return "<p>Hello, World!</p>"
 
 @app.route("/employee", methods=["GET"])
-def get_actors():
+def get_employee():
     cur = mysql.connection.cursor()
     query = """
     select * from employee
