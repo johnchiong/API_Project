@@ -1,5 +1,5 @@
 from flask import Flask, make_response, jsonify
-import flask_mysqldb import MySQL
+from flask_mysqldb import MySQL
 
 app = Flask(__name__)
 app.config["MySQL_HOST"] = "localhost"
@@ -15,11 +15,11 @@ mysql = MySQL(app)
 def hello_world():
     return "<p>Hello, World!</p>"
 
-@app.route("/department", methods=["GET"])
+@app.route("/employee", methods=["GET"])
 def get_actors():
     cur = mysql.connection.cursor()
     query = """
-    select * from department
+    select * from employee
     """
     cur.execute(query)
     data = cur.fetchall()
