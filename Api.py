@@ -15,26 +15,24 @@ mysql = MySQL(app)
 def hello_world():
     return "<p>Hello, World!</p>"
 
-@app.route("/employee", methods=["GET"])
-def get_employee():
+def data_fetch(query, values=None):
     cur = mysql.connection.cursor()
-    query = """
-    SELECT * FROM employee
-    """
-    cur.execute(query)
+    if values:
+        cur.execute(query, values)
+    else:
+        cur.execute(query)
     data = cur.fetchall()
     cur.close()
+    return data
+
+@app.route("/employee", methods=["GET"])
+def get_employee():
+    data = data_fetch("""SELECT * FROM employee""")
     return make_response(jsonify(data), 200)
 
 @app.route("/employee/<int:ssn>", methods=["GET"])
 def get_employee_by_ssn(ssn):
-    cur = mysql.connection.cursor()
-    query = """
-    SELECT * FROM employee WHERE ssn = %s
-    """
-    cur.execute(query, (ssn,))
-    data = cur.fetchall()
-    cur.close()
+    data = data_fetch("SELECT * FROM employee WHERE ssn = %s", (ssn,))
     return make_response(jsonify(data), 200)
 
 if __name__ == "__main__":
