@@ -32,7 +32,7 @@ def get_employee():
 
 @app.route("/employee/<int:ssn>", methods=["GET"])
 def get_employee_by_ssn(ssn):
-    data = data_fetch("SELECT * FROM employee WHERE ssn = %s", (ssn,))
+    data = data_fetch("""SELECT * FROM employee WHERE ssn = %s""", (ssn,))
     return make_response(jsonify(data), 200)
 
 @app.route("/employee", methods=["POST"])
@@ -48,8 +48,21 @@ def add_employee():
     print("row(s) affected :{}".format(cur.rowcount))
     rows_affected = cur.rowcount
     cur.close()
-    return make_response(jsonify({"message": "employee added succesfully", "rows_affected": cur.rowcount}), 200)
+    return make_response(jsonify({"message": "employee added successfully", "rows_affected": cur.rowcount}), 200)
 
+@app.route("/employee/<int:ssn>", methods=["Put"])
+def update_employee(ssn):
+    cur = mysql.connection.cursor()
+    info = request.get_json()
+    fname = info["first_name"]
+    lname = info["last_name"]
+    cur.execute("""
+    UPDATE employee Set first_name = %s, last_name = %s Where employee_id = %s""", 
+    (fname, lname, ssn),)
+    mysql.connection.commit()
+    rows_affected = cur.rowcount
+    cur.close()
+    return make_response(jsonify({"message": "employee updated successfully", "rows_affected": rows_affected}), 200)
 
 if __name__ == "__main__":
     app.run(debug=True)
