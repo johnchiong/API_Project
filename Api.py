@@ -64,5 +64,21 @@ def update_employee(ssn):
     cur.close()
     return make_response(jsonify({"message": "employee updated successfully", "rows_affected": rows_affected}), 200)
 
+@app.route("/employee/<int:ssn>", methods=["DELETE"])
+def delete_employee(ssn):
+    cur = mysql.connection.cursor()
+    cur.execute("""DELETE form employee where ssn = %s""", (ssn))
+    mysql.connection.commit()
+    rows_affected = cur.rowcount
+    cur.close()
+    return make_response(jsonify({"message": "employee deleted successfully", "rows_affected": rows_affected}), 200)
+
+@app.route("/employee/format", methods=["GET"])
+def get_params():
+    fmt = request.args.get("ssn")
+    foo = request.args.get("aaaa")
+    return make_response(jsonify({"format": fmt, "foo":foo}, 200))
+
+
 if __name__ == "__main__":
     app.run(debug=True)
