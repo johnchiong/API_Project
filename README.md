@@ -8,10 +8,10 @@ Update an existing employee's details
 Delete an employee
 REST API for managing employees programmatically
 
-Requirements
-Python 3.x
-Flask
-Flask-MySQLdb
+Requirements:
+Python 3.x, 
+Flask, 
+Flask-MySQLdb, and
 xmltodict
 
 Installation
