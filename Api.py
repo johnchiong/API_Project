@@ -296,21 +296,59 @@ def update_employee():
 </html>
 """)
 
-@app.route("/employee/<int:ssn>", methods=["DELETE"])
-def delete_employee(ssn):
-    cur = mysql.connection.cursor()
-    cur.execute("""DELETE form employee where ssn = %s""", (ssn))
-    mysql.connection.commit()
-    rows_affected = cur.rowcount
-    cur.close()
-    return make_response(jsonify({"message": "employee deleted successfully", "rows_affected": rows_affected}), 200)
+@app.route("/delete_employee", methods=["GET", "POST"])
+def delete_employee():
+    if request.method == "POST":
+        ssn = request.form["ssn"]
+        query = "SELECT * FROM employee WHERE ssn = %s"
+        employee = data_fetch(query, (ssn,))
+        
+        if not employee:
+            flash("Employee with SSN {} does not exist.".format(ssn))
+            return redirect(url_for("delete_employee"))
 
-@app.route("/employee/format", methods=["GET"])
-def get_params():
-    fmt = request.args.get("ssn")
-    foo = request.args.get("aaaa")
-    return make_response(jsonify({"format": fmt, "foo":foo}, 200))
+        query = "DELETE FROM employee WHERE ssn = %s"
+        cur = mysql.connection.cursor()
+        cur.execute(query, (ssn,))
+        mysql.connection.commit()
+        cur.close()
 
+        flash("Employee with SSN {} has been deleted.".format(ssn))
+        return redirect(url_for("get_employee"))
+
+    return render_template_string("""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Employee</title>
+</head>
+<body>
+    <h1>Delete Employee</h1>
+    <form action="/delete_employee" method="post">
+        <label for="ssn">Enter Employee SSN:</label><br>
+        <input type="text" id="ssn" name="ssn"><br>
+        <input type="submit" value="Delete Employee">
+    </form>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    <button id="return-home-btn">Return to Home</button>
+    <script>
+        document.getElementById("return-home-btn").addEventListener("click", function() {
+            window.location.href = "/";
+        });
+    </script>
+</body>
+</html>
+""")
 
 if __name__ == "__main__":
     app.run(debug=True)
