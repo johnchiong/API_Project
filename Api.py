@@ -1,4 +1,4 @@
-from flask import Flask, make_response, jsonify, request, render_template_string, redirect, url_for
+from flask import Flask, make_response, jsonify, request, render_template_string, redirect, url_for, flash
 from flask_mysqldb import MySQL
 
 app = Flask(__name__)
@@ -183,19 +183,118 @@ def add_employee():
 </html>
 """)
 
-@app.route("/employee/<int:ssn>", methods=["Put"])
-def update_employee(ssn):
-    cur = mysql.connection.cursor()
-    info = request.get_json()
-    fname = info["first_name"]
-    lname = info["last_name"]
-    cur.execute("""
-    UPDATE employee Set first_name = %s, last_name = %s Where employee_id = %s""", 
-    (fname, lname, ssn),)
-    mysql.connection.commit()
-    rows_affected = cur.rowcount
-    cur.close()
-    return make_response(jsonify({"message": "employee updated successfully", "rows_affected": rows_affected}), 200)
+@app.route("/update_employee", methods=["GET", "POST"])
+def update_employee():
+    if request.method == "POST":
+        ssn = request.form["ssn"]
+        query = "SELECT * FROM employee WHERE ssn = %s"
+        employee = data_fetch(query, (ssn,))
+        
+        if not employee:
+            flash("Employee with SSN {} does not exist.".format(ssn))
+            return redirect(url_for("update_employee"))
+        
+        employee = employee[0]
+        
+        if "update_details" in request.form:
+            fname = request.form["fname"]
+            minit = request.form["minit"]
+            lname = request.form["lname"]
+            address = request.form["address"]
+            bdate = request.form["bdate"]
+            dl_id = request.form["dl_id"]
+            salary = request.form["salary"]
+            sex = request.form["sex"]
+            super_ssn = request.form["super_ssn"]
+
+            query = """
+            UPDATE employee 
+            SET Fname = %s, Minit = %s, Lname = %s, Address = %s, Bdate = %s, DL_id = %s, Salary = %s, Sex = %s, Super_ssn = %s 
+            WHERE ssn = %s
+            """
+            values = (fname, minit, lname, address, bdate, dl_id, salary, sex, super_ssn, ssn)
+            cur = mysql.connection.cursor()
+            cur.execute(query, values)
+            mysql.connection.commit()
+            cur.close()
+
+            return redirect(url_for("get_employee"))
+        
+        return render_template_string("""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Employee</title>
+</head>
+<body>
+    <h1>Update Employee</h1>
+    <form action="/update_employee" method="post">
+        <input type="hidden" name="ssn" value="{{ employee.ssn }}">
+        <label for="fname">First Name:</label><br>
+        <input type="text" id="fname" name="fname" value="{{ employee.Fname }}"><br>
+        <label for="minit">Middle Initial:</label><br>
+        <input type="text" id="minit" name="minit" value="{{ employee.Minit }}"><br>
+        <label for="lname">Last Name:</label><br>
+        <input type="text" id="lname" name="lname" value="{{ employee.Lname }}"><br>
+        <label for="address">Address:</label><br>
+        <input type="text" id="address" name="address" value="{{ employee.Address }}"><br>
+        <label for="bdate">Birthdate:</label><br>
+        <input type="date" id="bdate" name="bdate" value="{{ employee.Bdate }}"><br>
+        <label for="dl_id">Department Location ID:</label><br>
+        <input type="text" id="dl_id" name="dl_id" value="{{ employee.DL_id }}"><br>
+        <label for="salary">Salary:</label><br>
+        <input type="number" id="salary" name="salary" value="{{ employee.Salary }}"><br>
+        <label for="sex">Sex:</label><br>
+        <input type="text" id="sex" name="sex" value="{{ employee.Sex }}"><br>
+        <label for="super_ssn">Supervisor SSN:</label><br>
+        <input type="text" id="super_ssn" name="super_ssn" value="{{ employee.Super_ssn }}"><br>
+        <input type="submit" name="update_details" value="Update Employee">
+    </form>
+    <button id="return-home-btn">Return to Home</button>
+    <script>
+        document.getElementById("return-home-btn").addEventListener("click", function() {
+            window.location.href = "/";
+        });
+    </script>
+</body>
+</html>
+""", employee=employee)
+
+    return render_template_string("""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Employee</title>
+</head>
+<body>
+    <h1>Update Employee</h1>
+    <form action="/update_employee" method="post">
+        <label for="ssn">Enter Employee SSN:</label><br>
+        <input type="text" id="ssn" name="ssn"><br>
+        <input type="submit" value="Find Employee">
+    </form>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    <button id="return-home-btn">Return to Home</button>
+    <script>
+        document.getElementById("return-home-btn").addEventListener("click", function() {
+            window.location.href = "/";
+        });
+    </script>
+</body>
+</html>
+""")
 
 @app.route("/employee/<int:ssn>", methods=["DELETE"])
 def delete_employee(ssn):
