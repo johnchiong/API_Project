@@ -140,38 +140,79 @@ def add_employee():
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Employee</title>
+    <script>
+        function validateForm() {
+            var Fname = document.forms["employeeForm"]["Fname"].value;
+            var Minit = document.forms["employeeForm"]["Minit"].value;
+            var Lname = document.forms["employeeForm"]["Lname"].value;
+            var Address = document.forms["employeeForm"]["Address"].value;
+            var Bdate = document.forms["employeeForm"]["Bdate"].value;
+            var DL_id = document.forms["employeeForm"]["DL_id"].value;
+            var Salary = document.forms["employeeForm"]["Salary"].value;
+            var Sex = document.forms["employeeForm"]["Sex"].value;
+            var Super_ssn = document.forms["employeeForm"]["Super_ssn"].value;
+            var ssn = document.forms["employeeForm"]["ssn"].value;
+
+            if (!Fname.match(/^[a-zA-Z]+$/)) {
+                alert("First Name must be letters only.");
+                return false;
+            }
+            if (!Minit.match(/^[a-zA-Z]$/)) {
+                alert("Middle Initial must be a single letter.");
+                return false;
+            }
+            if (!Lname.match(/^[a-zA-Z]+$/)) {
+                alert("Last Name must be letters only.");
+                return false;
+            }
+            if (Address === "") {
+                alert("Address must not be blank.");
+                return false;
+            }
+            if (Bdate === "") {
+                alert("Birthdate must not be blank.");
+                return false;
+            }
+            if (!DL_id.match(/^[0-9]+$/)) {
+                alert("Department Location ID must be a number.");
+                return false;
+            }
+            if (!Salary.match(/^[0-9]+$/)) {
+                alert("Salary must be a number.");
+                return false;
+            }
+            if (Sex !== "M" && Sex !== "F") {
+                alert("Sex must be either 'M' or 'F'.");
+                return false;
+            }
+            if (!Super_ssn.match(/^[0-9]+$/)) {
+                alert("Supervisor SSN must be a number.");
+                return false;
+            }
+            if (!ssn.match(/^[0-9]{9}$/)) {
+                alert("SSN must be a 9-digit number.");
+                return false;
+            }
+            return true;
+        }
+    </script>
 </head>
 <body>
-    <h1>Add an Employee</h1>
-    <form action="/add_employee" method="post">
-        <label for="fname">First Name:</label><br>
-        <input type="text" id="fname" name="fname"><br>
-        <label for="minit">Middle Initial:</label><br>
-        <input type="text" id="minit" name="minit"><br>
-        <label for="lname">Last Name:</label><br>
-        <input type="text" id="lname" name="lname"><br>
-        <label for="address">Address:</label><br>
-        <input type="text" id="address" name="address"><br>
-        <label for="bdate">Birthdate:</label><br>
-        <input type="date" id="bdate" name="bdate"><br>
-        <label for="dl_id">Department Location ID:</label><br>
-        <input type="text" id="dl_id" name="dl_id"><br>
-        <label for="salary">Salary:</label><br>
-        <input type="number" id="salary" name="salary"><br>
-        <label for="sex">Sex:</label><br>
-        <input type="text" id="sex" name="sex"><br>
-        <label for="super_ssn">Supervisor SSN:</label><br>
-        <input type="text" id="super_ssn" name="super_ssn"><br>
-        <label for="ssn">SSN:</label><br>
-        <input type="text" id="ssn" name="ssn"><br>
-        <input type="submit" value="Add Employee">
+    <h1>Add a New Employee</h1>
+    <form name="employeeForm" action="/add_employee" method="post" onsubmit="return validateForm()">
+        <label for="fname">First Name:</label><input type="text" id="fname" name="Fname"><br>
+        <label for="minit">Middle Initial:</label><input type="text" id="minit" name="Minit"><br>
+        <label for="lname">Last Name:</label><input type="text" id="lname" name="Lname"><br>
+        <label for="address">Address:</label><input type="text" id="address" name="Address"><br>
+        <label for="bdate">Birthdate:</label><input type="date" id="bdate" name="Bdate"><br>
+        <label for="dl_id">Department Location ID:</label><input type="text" id="dl_id" name="DL_id"><br>
+        <label for="salary">Salary:</label><input type="text" id="salary" name="Salary"><br>
+        <label for="sex">Sex:</label><input type="text" id="sex" name="Sex"><br>
+        <label for="super_ssn">Supervisor SSN:</label><input type="text" id="super_ssn" name="Super_ssn"><br>
+        <label for="ssn">SSN:</label><input type="text" id="ssn" name="ssn"><br>
+        <input type="submit" value="Submit">
     </form>
-    <button id="return-home-btn">Return to Home</button>
-    <script>
-        document.getElementById("return-home-btn").addEventListener("click", function() {
-            window.location.href = "/";
-        });
-    </script>
+    <button onclick="location.href='/'">Return to Home</button>
 </body>
 </html>
 """)
@@ -202,41 +243,23 @@ def update_employee():
         return render_template_string("""
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Employee</title>
-</head>
+<head><meta charset="UTF-8"><title>Update Employee</title></head>
 <body>
-    <h1>Update Employee</h1>
-    <form action="/update_employee" method="post">
-        <input type="hidden" name="ssn" value="{{ employee.ssn }}">
-        <label for="fname">First Name:</label><br>
-        <input type="text" id="fname" name="fname" value="{{ employee.Fname }}"><br>
-        <label for="minit">Middle Initial:</label><br>
-        <input type="text" id="minit" name="minit" value="{{ employee.Minit }}"><br>
-        <label for="lname">Last Name:</label><br>
-        <input type="text" id="lname" name="lname" value="{{ employee.Lname }}"><br>
-        <label for="address">Address:</label><br>
-        <input type="text" id="address" name="address" value="{{ employee.Address }}"><br>
-        <label for="bdate">Birthdate:</label><br>
-        <input type="date" id="bdate" name="bdate" value="{{ employee.Bdate }}"><br>
-        <label for="dl_id">Department Location ID:</label><br>
-        <input type="text" id="dl_id" name="dl_id" value="{{ employee.DL_id }}"><br>
-        <label for="salary">Salary:</label><br>
-        <input type="number" id="salary" name="salary" value="{{ employee.Salary }}"><br>
-        <label for="sex">Sex:</label><br>
-        <input type="text" id="sex" name="sex" value="{{ employee.Sex }}"><br>
-        <label for="super_ssn">Supervisor SSN:</label><br>
-        <input type="text" id="super_ssn" name="super_ssn" value="{{ employee.Super_ssn }}"><br>
-        <input type="submit" name="update_details" value="Update Employee">
-    </form>
-    <button id="return-home-btn">Return to Home</button>
-    <script>
-        document.getElementById("return-home-btn").addEventListener("click", function() {
-            window.location.href = "/";
-        });
-    </script>
+<h1>Update Employee</h1>
+<form action="/update_employee" method="post">
+    <input type="hidden" name="ssn" value="{{ employee[0].ssn }}">
+    <label for="fname">First Name:</label><br><input type="text" id="fname" name="fname" value="{{ employee[0].Fname }}"><br>
+    <label for="minit">Middle Initial:</label><br><input type="text" id="minit" name="minit" value="{{ employee[0].Minit }}"><br>
+    <label for="lname">Last Name:</label><br><input type="text" id="lname" name="lname" value="{{ employee[0].Lname }}"><br>
+    <label for="address">Address:</label><br><input type="text" id="address" name="address" value="{{ employee[0].Address }}"><br>
+    <label for="bdate">Birthdate:</label><br><input type="date" id="bdate" name="bdate" value="{{ employee[0].Bdate }}"><br>
+    <label for="dl_id">Department Location ID:</label><br><input type="text" id="dl_id" name="dl_id" value="{{ employee[0].DL_id }}"><br>
+    <label for="salary">Salary:</label><br><input type="number" id="salary" name="salary" value="{{ employee[0].Salary }}"><br>
+    <label for="sex">Sex:</label><br><input type="text" id="sex" name="sex" value="{{ employee[0].Sex }}"><br>
+    <label for="super_ssn">Supervisor SSN:</label><br><input type="text" id="super_ssn" name="super_ssn" value="{{ employee[0].Super_ssn }}"><br>
+    <input type="submit" name="update_details" value="Update Employee">
+</form>
+<button onclick="window.location.href='/'">Return to Home</button>
 </body>
 </html>
 """, employee=employee)
@@ -244,33 +267,14 @@ def update_employee():
     return render_template_string("""
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Employee</title>
-</head>
+<head><meta charset="UTF-8"><title>Update Employee</title></head>
 <body>
-    <h1>Update Employee</h1>
-    <form action="/update_employee" method="post">
-        <label for="ssn">Enter Employee SSN:</label><br>
-        <input type="text" id="ssn" name="ssn"><br>
-        <input type="submit" value="Find Employee">
-    </form>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul>
-          {% for message in messages %}
-            <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-    <button id="return-home-btn">Return to Home</button>
-    <script>
-        document.getElementById("return-home-btn").addEventListener("click", function() {
-            window.location.href = "/";
-        });
-    </script>
+<h1>Update Employee</h1>
+<form action="/update_employee" method="post">
+    <label for="ssn">Enter SSN of the Employee to Update:</label><br><input type="text" id="ssn" name="ssn"><br>
+    <input type="submit" value="Get Employee Details">
+</form>
+<button onclick="window.location.href='/'">Return to Home</button>
 </body>
 </html>
 """)
@@ -302,30 +306,14 @@ def delete_employee():
 <body>
     <h1>Delete Employee</h1>
     <form action="/delete_employee" method="post">
-        <label for="ssn">Enter Employee SSN:</label><br>
-        <input type="text" id="ssn" name="ssn"><br>
-        <input type="submit" value="Delete Employee">
+        <label for="ssn">Employee SSN:</label><input type="text" id="ssn" name="ssn" required><br>
+        <input type="submit" value="Delete">
     </form>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul>
-          {% for message in messages %}
-            <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-    <button id="return-home-btn">Return to Home</button>
-    <script>
-        document.getElementById("return-home-btn").addEventListener("click", function() {
-            window.location.href = "/";
-        });
-    </script>
+    <button onclick="location.href='/'">Return to Home</button>
 </body>
 </html>
 """)
 
-#API Endpoints
 @app.route("/api/employee/<int:ssn>", methods=["GET"])
 def api_get_employee(ssn):
     employee = execute_query("SELECT * FROM employee WHERE ssn = %s", (ssn,), fetch=True)
