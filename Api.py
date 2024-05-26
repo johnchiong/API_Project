@@ -1,25 +1,35 @@
-from flask import Flask, make_response, jsonify, request, render_template_string, redirect, url_for, flash
+from flask import Flask, jsonify, render_template_string, request, redirect, url_for, flash, Response
 from flask_mysqldb import MySQL
+import xmltodict
 
 app = Flask(__name__)
-app.config["MYSQL_HOST"] = "localhost"
-app.config["MYSQL_USER"] = "Lenovo"
-app.config["MYSQL_PASSWORD"] = "root"
-app.config["MYSQL_DB"] = "Company"
-
-app.config["MYSQL_CURSORCLASS"] = "DictCursor"
+app.config.update(
+    MYSQL_HOST="localhost",
+    MYSQL_USER="Lenovo",
+    MYSQL_PASSWORD="root",
+    MYSQL_DB="Company",
+    MYSQL_CURSORCLASS="DictCursor",
+    SECRET_KEY="your_secret_key"
+)
 
 mysql = MySQL(app)
 
-def data_fetch(query, values=None):
+def execute_query(query, values=None, fetch=False):
     cur = mysql.connection.cursor()
-    if values:
-        cur.execute(query, values)
+    cur.execute(query, values or ())
+    if fetch:
+        result = cur.fetchall()
     else:
-        cur.execute(query)
-    data = cur.fetchall()
+        mysql.connection.commit()
+        result = None
     cur.close()
-    return data
+    return result
+
+def format_response(data, response_format):
+    if response_format == "xml":
+        xml = xmltodict.unparse({"root": data})
+        return Response(xml, mimetype='application/xml')
+    return jsonify(data)
 
 @app.route("/")
 def home_screen():
@@ -32,26 +42,26 @@ def home_screen():
     <title>Employee Management</title>
 </head>
 <body>
-<header>
-    <h1>Employee Management System</h1>
-</header>
-<section id="employee-section">
-    <h2>List of Employees</h2>
-    <button id="view-employee-btn">View Employee</button>
-</section>
-<script>
-    document.getElementById("view-employee-btn").addEventListener("click", function() {
-        window.location.href = "/employee";
-    });
-</script>
+    <header>
+        <h1>Employee Management System</h1>
+    </header>
+    <section id="employee-section">
+        <h2>List of Employees</h2>
+        <button onclick="location.href='/employee'">View Employees</button>
+        <h3>Add a New Employee</h3>
+        <button onclick="location.href='/add_employee'">Add Employee</button>
+        <h3>Update an Employee</h3>
+        <button onclick="location.href='/update_employee'">Update Employee</button>
+        <h3>Delete an Employee</h3>
+        <button onclick="location.href='/delete_employee'">Delete Employee</button>
+    </section>
 </body>
 </html>
 """)
 
 @app.route("/employee", methods=["GET"])
 def get_employee():
-    query = "SELECT * FROM employee"
-    employees = data_fetch(query)
+    employees = execute_query("SELECT * FROM employee", fetch=True)
     return render_template_string("""
 <!DOCTYPE html>
 <html lang="en">
@@ -60,56 +70,32 @@ def get_employee():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Information</title>
     <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
     <h1>Employee Information</h1>
-    <button id="return-home-btn">Return to Home</button>
+    <button onclick="location.href='/'">Return to Home</button>
     <table>
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Address</th>
-                <th>Birthdate</th>
-                <th>Driver's License ID</th>
-                <th>Salary</th>
-                <th>Sex</th>
-                <th>Supervisor SSN</th>
-                <th>SSN</th>
+                <th>Name</th><th>Address</th><th>Birthdate</th><th>Department Location ID</th>
+                <th>Salary</th><th>Sex</th><th>Supervisor SSN</th><th>SSN</th>
             </tr>
         </thead>
         <tbody>
-            {% for employee in employees %}
+            {% for emp in employees %}
             <tr>
-                <td>{{ employee.Fname }} {{ employee.Minit }} {{ employee.Lname }}</td>
-                <td>{{ employee.Address }}</td>
-                <td>{{ employee.Bdate }}</td>
-                <td>{{ employee.DL_id }}</td>
-                <td>${{ employee.Salary }}</td>
-                <td>{{ employee.Sex }}</td>
-                <td>{{ employee.Super_ssn or "None" }}</td>
-                <td>{{ employee.ssn }}</td>
+                <td>{{ emp.Fname }} {{ emp.Minit }} {{ emp.Lname }}</td>
+                <td>{{ emp.Address }}</td><td>{{ emp.Bdate }}</td>
+                <td>{{ emp.DL_id }}</td><td>${{ emp.Salary }}</td>
+                <td>{{ emp.Sex }}</td><td>{{ emp.Super_ssn or "None" }}</td><td>{{ emp.ssn }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    <script>
-        document.getElementById("return-home-btn").addEventListener("click", function() {
-            window.location.href = "/";
-        });
-    </script>
 </body>
 </html>
 """, employees=employees)
@@ -117,29 +103,36 @@ def get_employee():
 @app.route("/add_employee", methods=["GET", "POST"])
 def add_employee():
     if request.method == "POST":
-        fname = request.form["fname"]
-        minit = request.form["minit"]
-        lname = request.form["lname"]
-        address = request.form["address"]
-        bdate = request.form["bdate"]
-        dl_id = request.form["dl_id"]
-        salary = request.form["salary"]
-        sex = request.form["sex"]
-        super_ssn = request.form["super_ssn"]
-        ssn = request.form["ssn"]
+        data = {field: request.form[field] for field in request.form}
+        errors = []
 
-        query = """
-        INSERT INTO employee (Fname, Minit, Lname, Address, Bdate, DL_id, Salary, Sex, Super_ssn, ssn)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        values = (fname, minit, lname, address, bdate, dl_id, salary, sex, super_ssn, ssn)
-        cur = mysql.connection.cursor()
-        cur.execute(query, values)
-        mysql.connection.commit()
-        cur.close()
-        
+        if not data["Fname"].isalpha():
+            errors.append("First Name must be letters only.")
+        if not data["Minit"].isalpha() or len(data["Minit"]) != 1:
+            errors.append("Middle Initial must be a single letter.")
+        if not data["Lname"].isalpha():
+            errors.append("Last Name must be letters only.")
+        if not data["DL_id"].isdigit():
+            errors.append("Department Location ID must be a number.")
+        if not data["Salary"].isdigit():
+            errors.append("Salary must be a number.")
+        if data["Sex"] not in ["M", "F"]:
+            errors.append("Sex must be either 'M' or 'F'.")
+        if not data["Super_ssn"].isdigit():
+            errors.append("Supervisor SSN must be a number.")
+        if not data["ssn"].isdigit() or len(data["ssn"]) != 9:
+            errors.append("SSN must be a 9-digit number.")
+
+        if errors:
+            for error in errors:
+                flash(error)
+            return redirect(url_for("add_employee"))
+
+        query = """INSERT INTO employee (Fname, Minit, Lname, Address, Bdate, DL_id, Salary, Sex, Super_ssn, ssn)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+        execute_query(query, (data["Fname"], data["Minit"], data["Lname"], data["Address"], data["Bdate"], data["DL_id"], data["Salary"], data["Sex"], data["Super_ssn"], data["ssn"]))
         return redirect(url_for("get_employee"))
-    
+
     return render_template_string("""
 <!DOCTYPE html>
 <html lang="en">
@@ -186,40 +179,26 @@ def add_employee():
 @app.route("/update_employee", methods=["GET", "POST"])
 def update_employee():
     if request.method == "POST":
-        ssn = request.form["ssn"]
-        query = "SELECT * FROM employee WHERE ssn = %s"
-        employee = data_fetch(query, (ssn,))
-        
-        if not employee:
-            flash("Employee with SSN {} does not exist.".format(ssn))
+        ssn = request.form.get("ssn")
+        if not ssn:
+            flash("SSN is required.")
             return redirect(url_for("update_employee"))
-        
-        employee = employee[0]
-        
-        if "update_details" in request.form:
-            fname = request.form["fname"]
-            minit = request.form["minit"]
-            lname = request.form["lname"]
-            address = request.form["address"]
-            bdate = request.form["bdate"]
-            dl_id = request.form["dl_id"]
-            salary = request.form["salary"]
-            sex = request.form["sex"]
-            super_ssn = request.form["super_ssn"]
 
+        if "update_details" in request.form:
+            data = request.form
             query = """
             UPDATE employee 
             SET Fname = %s, Minit = %s, Lname = %s, Address = %s, Bdate = %s, DL_id = %s, Salary = %s, Sex = %s, Super_ssn = %s 
             WHERE ssn = %s
             """
-            values = (fname, minit, lname, address, bdate, dl_id, salary, sex, super_ssn, ssn)
-            cur = mysql.connection.cursor()
-            cur.execute(query, values)
-            mysql.connection.commit()
-            cur.close()
-
+            execute_query(query, (data["fname"], data["minit"], data["lname"], data["address"], data["bdate"], data["dl_id"], data["salary"], data["sex"], data["super_ssn"], ssn))
             return redirect(url_for("get_employee"))
-        
+
+        employee = execute_query("SELECT * FROM employee WHERE ssn = %s", (ssn,), fetch=True)
+        if not employee:
+            flash(f"Employee with SSN {ssn} does not exist.")
+            return redirect(url_for("update_employee"))
+
         return render_template_string("""
 <!DOCTYPE html>
 <html lang="en">
@@ -300,20 +279,16 @@ def update_employee():
 def delete_employee():
     if request.method == "POST":
         ssn = request.form["ssn"]
-        query = "SELECT * FROM employee WHERE ssn = %s"
-        employee = data_fetch(query, (ssn,))
-        
-        if not employee:
-            flash("Employee with SSN {} does not exist.".format(ssn))
+        if not ssn.isdigit() or len(ssn) != 9:
+            flash("SSN must be a 9-digit number.")
             return redirect(url_for("delete_employee"))
 
-        query = "DELETE FROM employee WHERE ssn = %s"
-        cur = mysql.connection.cursor()
-        cur.execute(query, (ssn,))
-        mysql.connection.commit()
-        cur.close()
+        existing_employee = execute_query("SELECT * FROM employee WHERE ssn = %s", (ssn,), fetch=True)
+        if not existing_employee:
+            flash("Employee with this SSN does not exist.")
+            return redirect(url_for("delete_employee"))
 
-        flash("Employee with SSN {} has been deleted.".format(ssn))
+        execute_query("DELETE FROM employee WHERE ssn = %s", (ssn,))
         return redirect(url_for("get_employee"))
 
     return render_template_string("""
@@ -349,6 +324,15 @@ def delete_employee():
 </body>
 </html>
 """)
+
+#API Endpoints
+@app.route("/api/employee/<int:ssn>", methods=["GET"])
+def api_get_employee(ssn):
+    employee = execute_query("SELECT * FROM employee WHERE ssn = %s", (ssn,), fetch=True)
+    if not employee:
+        return jsonify({"error": "Employee not found"}), 404
+    return format_response(employee[0], request.args.get("format", "json"))
+
 
 if __name__ == "__main__":
     app.run(debug=True)
