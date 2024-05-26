@@ -333,6 +333,26 @@ def api_get_employee(ssn):
         return jsonify({"error": "Employee not found"}), 404
     return format_response(employee[0], request.args.get("format", "json"))
 
+@app.route("/api/employee", methods=["POST"])
+def api_add_employee():
+    data = request.get_json()
+    query = """INSERT INTO employee (Fname, Minit, Lname, Address, Bdate, DL_id, Salary, Sex, Super_ssn, ssn)
+               VALUES (%(Fname)s, %(Minit)s, %(Lname)s, %(Address)s, %(Bdate)s, %(DL_id)s, %(Salary)s, %(Sex)s, %(Super_ssn)s, %(ssn)s)"""
+    execute_query(query, data)
+    return jsonify({"message": "Employee added successfully"}), 201
+
+@app.route("/api/employee/<int:ssn>", methods=["PUT"])
+def api_update_employee(ssn):
+    data = request.get_json()
+    updates = ", ".join([f"{k} = %s" for k in data.keys()])
+    query = f"UPDATE employee SET {updates} WHERE ssn = %s"
+    execute_query(query, (*data.values(), ssn))
+    return jsonify({"message": "Employee updated successfully"})
+
+@app.route("/api/employee/<int:ssn>", methods=["DELETE"])
+def api_delete_employee(ssn):
+    execute_query("DELETE FROM employee WHERE ssn = %s", (ssn,))
+    return jsonify({"message": "Employee deleted successfully"})
 
 if __name__ == "__main__":
     app.run(debug=True)
